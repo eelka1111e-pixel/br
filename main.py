@@ -120,7 +120,22 @@ def handle_all_messages(message):
     reply = get_gemini_response(last_chat_id, message.text)
     bot.reply_to(message, reply)
 
+import http.server
+import socketserver
+
+def run_dummy_server():
+    PORT = int(os.environ.get("PORT", 8080))
+    Handler = http.server.SimpleHTTPRequestHandler
+    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        httpd.serve_forever()
+
 if __name__ == '__main__':
-    threading.Thread(target=autonomous_worker, daemon=True).start()
-    print("Бро запущен!")
-    bot.infinity_polling()
+    # Запускаем "пустой" сервер в отдельном потоке для Render
+    threading.Thread(target=run_dummy_server, daemon=True).start()
+    
+    print("[СТАРТ] Запускаем поток автономности...")
+    bg_thread = threading.Thread(target=autonomous_worker, daemon=True)
+    bg_thread.start()
+    
+    print("[СТАРТ] Бот 'Цифровой Бро' вышел в сеть. Слушаю Telegram...")
+    bot.infinity_polling(none_stop=True)
