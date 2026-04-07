@@ -112,30 +112,29 @@ def send_welcome(message):
     bot.reply_to(message, "Ну здорово. Чё надо?")
 
 @bot.message_handler(func=lambda message: True)
-def handle_all_messages(message):
-    global last_chat_id
-    last_chat_id = message.chat.id
-    save_chat_id(last_chat_id)
-    time.sleep(1) # Защита от спама
-    reply = get_gemini_response(last_chat_id, message.text)
-    bot.reply_to(message, reply)
-
+def # --- ЗАГЛУШКА ДЛЯ RENDER (ЧТОБЫ НЕ ВЫЛЕТАЛО) ---
 import http.server
 import socketserver
 
 def run_dummy_server():
-    PORT = int(os.environ.get("PORT", 8080))
-    Handler = http.server.SimpleHTTPRequestHandler
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+    # Render передает порт в переменную окружения PORT
+    port = int(os.environ.get("PORT", 8080))
+    handler = http.server.SimpleHTTPRequestHandler
+    # Позволяем повторное использование адреса, чтобы не было ошибки "Address already in use"
+    socketserver.TCPServer.allow_reuse_address = True
+    with socketserver.TCPServer(("", port), handler) as httpd:
+        print(f"[RENDER] Слушаю порт {port}")
         httpd.serve_forever()
 
+# --- ЗАПУСК ---
 if __name__ == '__main__':
-    # Запускаем "пустой" сервер в отдельном потоке для Render
+    # 1. Сначала запускаем сервер-заглушку в фоне
     threading.Thread(target=run_dummy_server, daemon=True).start()
     
-    print("[СТАРТ] Запускаем поток автономности...")
-    bg_thread = threading.Thread(target=autonomous_worker, daemon=True)
-    bg_thread.start()
+    # 2. Запускаем поток, который будет писать первым
+    print("[СТАРТ] Запускаем автономный режим...")
+    threading.Thread(target=autonomous_worker, daemon=True).start()
     
-    print("[СТАРТ] Бот 'Цифровой Бро' вышел в сеть. Слушаю Telegram...")
+    # 3. Запускаем самого бота
+    print("[СТАРТ] Бро в сети и готов дерзить!")
     bot.infinity_polling(none_stop=True)
